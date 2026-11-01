@@ -1,6 +1,7 @@
 package app_test
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
@@ -47,7 +48,7 @@ func TestOpenAPIMatchesRouter(t *testing.T) {
 		got[key] = true
 		role, ok := want[key]
 		require.True(t, ok, "route %s missing from api/openapi.yaml", key)
-		require.Equal(t, role, probeMinRole(srv, method, route), "x-min-role mismatch for %s", key)
+		require.Equal(t, role, probeMinRole(t.Context(), srv, method, route), "x-min-role mismatch for %s", key)
 		return nil
 	})
 	require.NoError(t, err)
@@ -59,10 +60,10 @@ func TestOpenAPIMatchesRouter(t *testing.T) {
 var paramRE = regexp.MustCompile(`\{\w+\}`)
 
 // probeMinRole returns the lowest role (or "none") that gets past the guards.
-func probeMinRole(h http.Handler, method, route string) string {
+func probeMinRole(ctx context.Context, h http.Handler, method, route string) string {
 	path := paramRE.ReplaceAllString(route, "x")
 	for _, tok := range []string{"", "learner", "editor", "admin"} {
-		req := httptest.NewRequest(method, path, nil)
+		req := httptest.NewRequestWithContext(ctx, method, path, nil)
 		if tok != "" {
 			req.Header.Set("Authorization", "Bearer "+tok)
 		}
@@ -82,7 +83,7 @@ func TestDocsEndpoints(t *testing.T) {
 	srv := newServer(t)
 	for path, ct := range map[string]string{"/openapi.yaml": "application/yaml", "/docs": "text/html"} {
 		w := httptest.NewRecorder()
-		srv.ServeHTTP(w, httptest.NewRequest(http.MethodGet, path, nil))
+		srv.ServeHTTP(w, httptest.NewRequestWithContext(t.Context(), http.MethodGet, path, nil))
 		require.Equal(t, 200, w.Code, path)
 		require.Contains(t, w.Header().Get("Content-Type"), ct, path)
 	}

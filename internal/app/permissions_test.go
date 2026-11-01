@@ -62,7 +62,7 @@ func TestPermissions(t *testing.T) {
 	srv := newServer(t)
 	for _, c := range cases {
 		t.Run(c.method+" "+c.path+" as "+c.token, func(t *testing.T) {
-			req := httptest.NewRequest(c.method, c.path, nil)
+			req := httptest.NewRequestWithContext(t.Context(), c.method, c.path, nil)
 			if c.token != "" {
 				req.Header.Set("Authorization", "Bearer "+c.token)
 			}
@@ -75,6 +75,6 @@ func TestPermissions(t *testing.T) {
 
 func TestHealthz(t *testing.T) {
 	rec := httptest.NewRecorder()
-	newServer(t).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/healthz", nil))
+	newServer(t).ServeHTTP(rec, httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/healthz", nil))
 	require.Equal(t, 200, rec.Code)
 }

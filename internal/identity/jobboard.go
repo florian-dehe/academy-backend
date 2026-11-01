@@ -120,7 +120,7 @@ func (r *JobBoardResolver) fetch(ctx context.Context, token string, key [32]byte
 	if err != nil {
 		return User{}, fmt.Errorf("identity: job board: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	switch {
 	case resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden:

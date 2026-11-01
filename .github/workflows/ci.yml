@@ -4,11 +4,11 @@ on:
     branches: [main]
   pull_request:
 jobs:
-  test:
+  ci:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:17
+        image: postgres:17-alpine
         env:
           POSTGRES_USER: academy
           POSTGRES_PASSWORD: academy
@@ -20,25 +20,13 @@ jobs:
     env:
       TEST_DATABASE_URL: postgres://academy:academy@localhost:5432/academy_test?sslmode=disable
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
       - run: go vet ./...
-      - run: go test ./... -race -count=1
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: golangci/golangci-lint-action@v9
         with:
-          go-version-file: go.mod
-      - uses: golangci/golangci-lint-action@v8
-  vuln:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
+          version: latest
       - run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+      - run: go test ./... -race -count=1
