@@ -62,7 +62,7 @@ func TestPermissions(t *testing.T) {
 	srv := newServer(t)
 	for _, c := range cases {
 		t.Run(c.method+" "+c.path+" as "+c.token, func(t *testing.T) {
-			req := httptest.NewRequest(c.method, c.path, nil)
+			req := httptest.NewRequestWithContext(t.Context(), c.method, c.path, nil)
 			if c.token != "" {
 				req.Header.Set("Authorization", "Bearer "+c.token)
 			}
