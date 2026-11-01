@@ -16,7 +16,7 @@ import (
 func TestRecovererReturnsJSON(t *testing.T) {
 	h := httpx.Recoverer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { panic("boom") }))
 	rec := httptest.NewRecorder()
-	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
+	h.ServeHTTP(rec, httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/", nil))
 	require.Equal(t, http.StatusInternalServerError, rec.Code)
 	require.Contains(t, rec.Header().Get("Content-Type"), "application/json")
 	require.Contains(t, rec.Body.String(), `"code":"internal"`)
@@ -28,7 +28,7 @@ func TestRequestLoggerIncludesActor(t *testing.T) {
 	h := httpx.RequestLogger(l)(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		httpx.SetActor(r.Context(), "u1", "admin")
 	}))
-	h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodPut, "/v1/levels", nil))
+	h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequestWithContext(t.Context(), http.MethodPut, "/v1/levels", nil))
 	require.Contains(t, buf.String(), `"user_id":"u1"`)
 	require.Contains(t, buf.String(), `"role":"admin"`)
 }
@@ -36,7 +36,7 @@ func TestRequestLoggerIncludesActor(t *testing.T) {
 func TestDecodeLimitsAndTrailing(t *testing.T) {
 	var v struct{ A int }
 	req := func(body string) *http.Request {
-		return httptest.NewRequest(http.MethodPost, "/", strings.NewReader(body))
+		return httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/", strings.NewReader(body))
 	}
 	require.NoError(t, httpx.Decode(req(`{"A":1}`), &v))
 	require.Error(t, httpx.Decode(req(`{"A":1} {"A":2}`), &v))

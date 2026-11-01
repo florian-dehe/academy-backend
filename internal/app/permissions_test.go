@@ -75,6 +75,6 @@ func TestPermissions(t *testing.T) {
 
 func TestHealthz(t *testing.T) {
 	rec := httptest.NewRecorder()
-	newServer(t).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/healthz", nil))
+	newServer(t).ServeHTTP(rec, httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/healthz", nil))
 	require.Equal(t, 200, rec.Code)
 }

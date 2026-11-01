@@ -25,6 +25,10 @@ linters:
     - wastedassign
     - whitespace
   settings:
+    gosec:
+      excludes:
+        # meURL is operator config, not user input.
+        - G704
     revive:
       # Everything in revive's default set except `exported` (doc comment on
       # every exported name), which is noise for an application.
