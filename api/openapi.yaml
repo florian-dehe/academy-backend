@@ -1,0 +1,560 @@
+openapi: 3.0.3
+info:
+  title: Remojii Academy API
+  version: 0.1.0
+  description: |
+    Route skeleton for the Academy backend. Every route currently answers
+    501 not_implemented; request/response schemas are added per module as
+    handlers are built. A test (internal/app/openapi_test.go) fails when this
+    file and the router disagree on paths, methods or required role.
+    Required role is also exposed per operation as `x-min-role`
+    (admin includes content_editor includes learner).
+servers:
+  - url: /
+tags:
+  - {name: ops}
+  - {name: identity}
+  - {name: intro-test}
+  - {name: learning}
+  - {name: gamification}
+  - {name: billing}
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Device token resolved by identity.TokenResolver.
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code]
+          properties:
+            code: {type: string, example: not_implemented}
+            message: {type: string}
+  responses:
+    NotImplemented:
+      description: Route not built yet.
+      content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}
+    Unauthorized:
+      description: Missing or invalid bearer token.
+      content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}
+    Forbidden:
+      description: Authenticated but role too low.
+      content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}
+paths:
+  /healthz:
+    get:
+      operationId: getHealthz
+      tags: [ops]
+      x-min-role: none
+      security: []
+      responses:
+        '200': {description: Process is up.}
+  /readyz:
+    get:
+      operationId: getReadyz
+      tags: [ops]
+      x-min-role: none
+      security: []
+      responses:
+        '200': {description: Dependencies reachable.}
+        '503': {description: Dependency unavailable.}
+  /v1/chapter-versions/{versionId}:
+    parameters:
+      - {name: versionId, in: path, required: true, schema: {type: string, format: uuid}}
+    patch:
+      operationId: patchChapterVersionsVersionid
+      tags: [learning]
+      x-min-role: editor
+      security: [{bearerAuth: []}]
+      description: 'Edit draft title / description / milestone_text'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+    delete:
+      operationId: deleteChapterVersionsVersionid
+      tags: [learning]
+      x-min-role: editor
+      security: [{bearerAuth: []}]
+      description: 'Discard a draft'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /v1/chapter-versions/{versionId}/final-quiz:
+    parameters:
+      - {name: versionId, in: path, required: true, schema: {type: string, format: uuid}}
+    put:
+      operationId: putChapterVersionsVersionidFinalQuiz
+      tags: [learning]
+      x-min-role: editor
+      security: [{bearerAuth: []}]
+      description: 'Set chapter final quiz (questions json, pass_score)'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /v1/chapter-versions/{versionId}/modules:
+    parameters:
+      - {name: versionId, in: path, required: true, schema: {type: string, format: uuid}}
+    post:
+      operationId: postChapterVersionsVersionidModules
+      tags: [learning]
+      x-min-role: editor
+      security: [{bearerAuth: []}]
+      description: 'Create module (title, xp_reward); steps are filled with the calls below'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /v1/chapter-versions/{versionId}/modules/order:
+    parameters:
+      - {name: versionId, in: path, required: true, schema: {type: string, format: uuid}}
+    put:
+      operationId: putChapterVersionsVersionidModulesOrder
+      tags: [learning]
+      x-min-role: editor
+      security: [{bearerAuth: []}]
+      description: 'Rearrange module order'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /v1/chapter-versions/{versionId}/publish:
+    parameters:
+      - {name: versionId, in: path, required: true, schema: {type: string, format: uuid}}
+    post:
+      operationId: postChapterVersionsVersionidPublish
+      tags: [learning]
+      x-min-role: admin
+      security: [{bearerAuth: []}]
+      description: 'Publish draft → previous published becomes archived'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /v1/chapter-versions/{versionId}/rollback:
+    parameters:
+      - {name: versionId, in: path, required: true, schema: {type: string, format: uuid}}
+    post:
+      operationId: postChapterVersionsVersionidRollback
+      tags: [learning]
+      x-min-role: admin
+      security: [{bearerAuth: []}]
+      description: 'Re-publish an archived version'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /v1/chapters:
+    get:
+      operationId: getChapters
+      tags: [learning]
+      x-min-role: learner
+      security: [{bearerAuth: []}]
+      description: 'List chapters with user status (locked/unlocked/in_progress/completed). Editors and admins also get draft version info.'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+    post:
+      operationId: postChapters
+      tags: [learning]
+      x-min-role: editor
+      security: [{bearerAuth: []}]
+      description: 'Create chapter (creates version 1 draft)'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /v1/chapters/order:
+    put:
+      operationId: putChaptersOrder
+      tags: [learning]
+      x-min-role: editor
+      security: [{bearerAuth: []}]
+      description: 'Reorder chapters'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /v1/chapters/{chapterId}:
+    parameters:
+      - {name: chapterId, in: path, required: true, schema: {type: string, format: uuid}}
+    get:
+      operationId: getChaptersChapterid
+      tags: [learning]
+      x-min-role: learner
+      security: [{bearerAuth: []}]
+      description: 'Chapter detail + module list + final quiz id + milestone_text + progress'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+    patch:
+      operationId: patchChaptersChapterid
+      tags: [learning]
+      x-min-role: editor
+      security: [{bearerAuth: []}]
+      description: 'Update position / is_free'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+    delete:
+      operationId: deleteChaptersChapterid
+      tags: [learning]
+      x-min-role: admin
+      security: [{bearerAuth: []}]
+      description: 'Soft delete chapter'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /v1/chapters/{chapterId}/versions:
+    parameters:
+      - {name: chapterId, in: path, required: true, schema: {type: string, format: uuid}}
+    get:
+      operationId: getChaptersChapteridVersions
+      tags: [learning]
+      x-min-role: editor
+      security: [{bearerAuth: []}]
+      description: 'Version history'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+    post:
+      operationId: postChaptersChapteridVersions
+      tags: [learning]
+      x-min-role: editor
+      security: [{bearerAuth: []}]
+      description: 'New draft (cloned from published)'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /v1/intro-test/questions:
+    get:
+      operationId: getIntroTestQuestions
+      tags: [intro-test]
+      x-min-role: learner
+      security: [{bearerAuth: []}]
+      description: 'The 30 questions (ordered)'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+  /v1/intro-test/result:
+    post:
+      operationId: postIntroTestResult
+      tags: [intro-test]
+      x-min-role: learner
+      security: [{bearerAuth: []}]
+      description: 'Submit all 30 answers → computes and stores PersonalityResult'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+  /v1/levels:
+    get:
+      operationId: getLevels
+      tags: [gamification]
+      x-min-role: learner
+      security: [{bearerAuth: []}]
+      description: 'Level thresholds'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+    put:
+      operationId: putLevels
+      tags: [gamification]
+      x-min-role: admin
+      security: [{bearerAuth: []}]
+      description: 'Edit level thresholds'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /v1/me:
+    get:
+      operationId: getMe
+      tags: [identity]
+      x-min-role: learner
+      security: [{bearerAuth: []}]
+      description: 'Current user profile'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+    patch:
+      operationId: patchMe
+      tags: [identity]
+      x-min-role: learner
+      security: [{bearerAuth: []}]
+      description: 'Update display_name'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+    delete:
+      operationId: deleteMe
+      tags: [identity]
+      x-min-role: learner
+      security: [{bearerAuth: []}]
+      description: 'Delete account and Academy data'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+  /v1/me/payments:
+    get:
+      operationId: getMePayments
+      tags: [billing]
+      x-min-role: learner
+      security: [{bearerAuth: []}]
+      description: 'Payment history'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+  /v1/me/personality-result:
+    get:
+      operationId: getMePersonalityResult
+      tags: [intro-test]
+      x-min-role: learner
+      security: [{bearerAuth: []}]
+      description: 'Latest result (score per axis)'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+  /v1/me/progress:
+    get:
+      operationId: getMeProgress
+      tags: [learning]
+      x-min-role: learner
+      security: [{bearerAuth: []}]
+      description: 'Progress for all chapters and modules'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+  /v1/me/stats:
+    get:
+      operationId: getMeStats
+      tags: [gamification]
+      x-min-role: learner
+      security: [{bearerAuth: []}]
+      description: 'total_xp, level, next level threshold, current/longest streak'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+  /v1/me/streak/check-in:
+    post:
+      operationId: postMeStreakCheckIn
+      tags: [gamification]
+      x-min-role: learner
+      security: [{bearerAuth: []}]
+      description: 'Register daily activity: increments streak, grants daily XP once per day'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+  /v1/me/subscription:
+    get:
+      operationId: getMeSubscription
+      tags: [billing]
+      x-min-role: learner
+      security: [{bearerAuth: []}]
+      description: 'Current subscription + status + period end'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+    post:
+      operationId: postMeSubscription
+      tags: [billing]
+      x-min-role: learner
+      security: [{bearerAuth: []}]
+      description: 'Start Academy Plus (payment method token from provider)'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+  /v1/me/subscription/cancel:
+    post:
+      operationId: postMeSubscriptionCancel
+      tags: [billing]
+      x-min-role: learner
+      security: [{bearerAuth: []}]
+      description: 'Cancel at period end'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+  /v1/modules/{moduleId}:
+    parameters:
+      - {name: moduleId, in: path, required: true, schema: {type: string, format: uuid}}
+    get:
+      operationId: getModulesModuleid
+      tags: [learning]
+      x-min-role: learner
+      security: [{bearerAuth: []}]
+      description: 'Module content: video, recap quiz (questions + options **without** is_correct), exercise (exercise_type + config), per-step progress'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+    patch:
+      operationId: patchModulesModuleid
+      tags: [learning]
+      x-min-role: editor
+      security: [{bearerAuth: []}]
+      description: 'Update title, xp_reward'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+    delete:
+      operationId: deleteModulesModuleid
+      tags: [learning]
+      x-min-role: editor
+      security: [{bearerAuth: []}]
+      description: 'Remove module (and its video, quiz, exercise)'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /v1/modules/{moduleId}/exercise:
+    parameters:
+      - {name: moduleId, in: path, required: true, schema: {type: string, format: uuid}}
+    put:
+      operationId: putModulesModuleidExercise
+      tags: [learning]
+      x-min-role: editor
+      security: [{bearerAuth: []}]
+      description: 'Set exercise (exercise_type, title, instructions, config json)'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /v1/modules/{moduleId}/exercise-submissions:
+    parameters:
+      - {name: moduleId, in: path, required: true, schema: {type: string, format: uuid}}
+    post:
+      operationId: postModulesModuleidExerciseSubmissions
+      tags: [learning]
+      x-min-role: learner
+      security: [{bearerAuth: []}]
+      description: 'Step 3: submit exercise payload (type-specific) → score, completed; completing it completes the module and grants XP'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+  /v1/modules/{moduleId}/quiz:
+    parameters:
+      - {name: moduleId, in: path, required: true, schema: {type: string, format: uuid}}
+    put:
+      operationId: putModulesModuleidQuiz
+      tags: [learning]
+      x-min-role: editor
+      security: [{bearerAuth: []}]
+      description: 'Set recap quiz (questions json, pass_score)'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /v1/modules/{moduleId}/video:
+    parameters:
+      - {name: moduleId, in: path, required: true, schema: {type: string, format: uuid}}
+    put:
+      operationId: putModulesModuleidVideo
+      tags: [learning]
+      x-min-role: editor
+      security: [{bearerAuth: []}]
+      description: 'Set video (video_url, duration_seconds, transcript)'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /v1/modules/{moduleId}/video/complete:
+    parameters:
+      - {name: moduleId, in: path, required: true, schema: {type: string, format: uuid}}
+    post:
+      operationId: postModulesModuleidVideoComplete
+      tags: [learning]
+      x-min-role: learner
+      security: [{bearerAuth: []}]
+      description: 'Step 1: mark video watched'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+  /v1/plans:
+    get:
+      operationId: getPlans
+      tags: [billing]
+      x-min-role: none
+      security: []
+      description: 'Plans and prices (4.99 first month, 3.99 after)'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+  /v1/plans/{planId}:
+    parameters:
+      - {name: planId, in: path, required: true, schema: {type: string, format: uuid}}
+    patch:
+      operationId: patchPlansPlanid
+      tags: [billing]
+      x-min-role: admin
+      security: [{bearerAuth: []}]
+      description: 'Edit plan prices (affects new subscriptions only)'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /v1/quiz-attempts/{attemptId}/submit:
+    parameters:
+      - {name: attemptId, in: path, required: true, schema: {type: string, format: uuid}}
+    post:
+      operationId: postQuizAttemptsAttemptidSubmit
+      tags: [learning]
+      x-min-role: learner
+      security: [{bearerAuth: []}]
+      description: 'Submit answers {question_id: option_id} → score, passed, correct answers; pass completes the step'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+  /v1/quizzes/{quizId}/attempts:
+    parameters:
+      - {name: quizId, in: path, required: true, schema: {type: string, format: uuid}}
+    post:
+      operationId: postQuizzesQuizidAttempts
+      tags: [learning]
+      x-min-role: learner
+      security: [{bearerAuth: []}]
+      description: 'Start attempt on a recap quiz (step 2) or a chapter final quiz'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+  /v1/users:
+    get:
+      operationId: getUsers
+      tags: [identity]
+      x-min-role: admin
+      security: [{bearerAuth: []}]
+      description: 'Search users (email, role, subscription status)'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /v1/users/{userId}/role:
+    parameters:
+      - {name: userId, in: path, required: true, schema: {type: string, format: uuid}}
+    patch:
+      operationId: patchUsersUseridRole
+      tags: [identity]
+      x-min-role: admin
+      security: [{bearerAuth: []}]
+      description: 'Set role (learner / content_editor / admin)'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /v1/webhooks/payments:
+    post:
+      operationId: postWebhooksPayments
+      tags: [billing]
+      x-min-role: none
+      security: []
+      description: 'Payment provider events (signature-verified, not user-authenticated). Sets expired on declined card / cancelled payment'
+      responses:
+        '501': {$ref: '#/components/responses/NotImplemented'}
