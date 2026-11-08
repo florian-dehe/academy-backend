@@ -17,7 +17,6 @@ tags:
   - {name: intro-test}
   - {name: learning}
   - {name: gamification}
-  - {name: billing}
 components:
   securitySchemes:
     bearerAuth:
@@ -305,16 +304,6 @@ paths:
       responses:
         '501': {$ref: '#/components/responses/NotImplemented'}
         '401': {$ref: '#/components/responses/Unauthorized'}
-  /v1/me/payments:
-    get:
-      operationId: getMePayments
-      tags: [billing]
-      x-min-role: learner
-      security: [{bearerAuth: []}]
-      description: 'Payment history'
-      responses:
-        '501': {$ref: '#/components/responses/NotImplemented'}
-        '401': {$ref: '#/components/responses/Unauthorized'}
   /v1/me/personality-result:
     get:
       operationId: getMePersonalityResult
@@ -352,35 +341,6 @@ paths:
       x-min-role: learner
       security: [{bearerAuth: []}]
       description: 'Register daily activity: increments streak, grants daily XP once per day'
-      responses:
-        '501': {$ref: '#/components/responses/NotImplemented'}
-        '401': {$ref: '#/components/responses/Unauthorized'}
-  /v1/me/subscription:
-    get:
-      operationId: getMeSubscription
-      tags: [billing]
-      x-min-role: learner
-      security: [{bearerAuth: []}]
-      description: 'Current subscription + status + period end'
-      responses:
-        '501': {$ref: '#/components/responses/NotImplemented'}
-        '401': {$ref: '#/components/responses/Unauthorized'}
-    post:
-      operationId: postMeSubscription
-      tags: [billing]
-      x-min-role: learner
-      security: [{bearerAuth: []}]
-      description: 'Start Academy Plus (payment method token from provider)'
-      responses:
-        '501': {$ref: '#/components/responses/NotImplemented'}
-        '401': {$ref: '#/components/responses/Unauthorized'}
-  /v1/me/subscription/cancel:
-    post:
-      operationId: postMeSubscriptionCancel
-      tags: [billing]
-      x-min-role: learner
-      security: [{bearerAuth: []}]
-      description: 'Cancel at period end'
       responses:
         '501': {$ref: '#/components/responses/NotImplemented'}
         '401': {$ref: '#/components/responses/Unauthorized'}
@@ -479,28 +439,6 @@ paths:
       responses:
         '501': {$ref: '#/components/responses/NotImplemented'}
         '401': {$ref: '#/components/responses/Unauthorized'}
-  /v1/plans:
-    get:
-      operationId: getPlans
-      tags: [billing]
-      x-min-role: none
-      security: []
-      description: 'Plans and prices (4.99 first month, 3.99 after)'
-      responses:
-        '501': {$ref: '#/components/responses/NotImplemented'}
-  /v1/plans/{planId}:
-    parameters:
-      - {name: planId, in: path, required: true, schema: {type: string, format: uuid}}
-    patch:
-      operationId: patchPlansPlanid
-      tags: [billing]
-      x-min-role: admin
-      security: [{bearerAuth: []}]
-      description: 'Edit plan prices (affects new subscriptions only)'
-      responses:
-        '501': {$ref: '#/components/responses/NotImplemented'}
-        '401': {$ref: '#/components/responses/Unauthorized'}
-        '403': {$ref: '#/components/responses/Forbidden'}
   /v1/quiz-attempts/{attemptId}/submit:
     parameters:
       - {name: attemptId, in: path, required: true, schema: {type: string, format: uuid}}
@@ -549,12 +487,3 @@ paths:
         '501': {$ref: '#/components/responses/NotImplemented'}
         '401': {$ref: '#/components/responses/Unauthorized'}
         '403': {$ref: '#/components/responses/Forbidden'}
-  /v1/webhooks/payments:
-    post:
-      operationId: postWebhooksPayments
-      tags: [billing]
-      x-min-role: none
-      security: []
-      description: 'Payment provider events (signature-verified, not user-authenticated). Sets expired on declined card / cancelled payment'
-      responses:
-        '501': {$ref: '#/components/responses/NotImplemented'}

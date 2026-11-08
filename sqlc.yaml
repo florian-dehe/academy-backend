@@ -1,0 +1,78 @@
+version: "2"
+sql:
+  - engine: postgresql
+    schema: migrations
+    queries: internal/identity/queries
+    gen:
+      go:
+        package: store
+        out: internal/identity/store
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        overrides:
+          - {db_type: uuid, go_type: github.com/google/uuid.UUID}
+          - {db_type: uuid, nullable: true, go_type: {import: github.com/google/uuid, type: UUID, pointer: true}}
+          - {db_type: timestamptz, go_type: time.Time}
+          - {db_type: timestamptz, nullable: true, go_type: {import: time, type: Time, pointer: true}}
+          - {db_type: jsonb, go_type: encoding/json.RawMessage}
+          - {column: users.role, go_type: github.com/remojii/academy-api/internal/identity.Role}
+  - engine: postgresql
+    schema: migrations
+    queries: internal/content/queries
+    gen:
+      go:
+        package: store
+        out: internal/content/store
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        overrides:
+          - {db_type: uuid, go_type: github.com/google/uuid.UUID}
+          - {db_type: uuid, nullable: true, go_type: {import: github.com/google/uuid, type: UUID, pointer: true}}
+          - {db_type: timestamptz, go_type: time.Time}
+          - {db_type: timestamptz, nullable: true, go_type: {import: time, type: Time, pointer: true}}
+          - {db_type: jsonb, go_type: encoding/json.RawMessage}
+  - engine: postgresql
+    schema: migrations
+    queries: internal/learning/queries
+    gen:
+      go:
+        package: store
+        out: internal/learning/store
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        overrides:
+          - {db_type: uuid, go_type: github.com/google/uuid.UUID}
+          - {db_type: uuid, nullable: true, go_type: {import: github.com/google/uuid, type: UUID, pointer: true}}
+          - {db_type: timestamptz, go_type: time.Time}
+          - {db_type: timestamptz, nullable: true, go_type: {import: time, type: Time, pointer: true}}
+          - {db_type: jsonb, go_type: encoding/json.RawMessage}
+  - engine: postgresql
+    schema: migrations
+    queries: internal/gamification/queries
+    gen:
+      go:
+        package: store
+        out: internal/gamification/store
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        overrides:
+          - {db_type: uuid, go_type: github.com/google/uuid.UUID}
+          - {db_type: uuid, nullable: true, go_type: {import: github.com/google/uuid, type: UUID, pointer: true}}
+          - {db_type: timestamptz, go_type: time.Time}
+          - {db_type: timestamptz, nullable: true, go_type: {import: time, type: Time, pointer: true}}
+          - {db_type: jsonb, go_type: encoding/json.RawMessage}
+  - engine: postgresql
+    schema: migrations
+    queries: internal/introtest/queries
+    gen:
+      go:
+        package: store
+        out: internal/introtest/store
+        sql_package: pgx/v5
+        emit_empty_slices: true
+        overrides:
+          - {db_type: uuid, go_type: github.com/google/uuid.UUID}
+          - {db_type: uuid, nullable: true, go_type: {import: github.com/google/uuid, type: UUID, pointer: true}}
+          - {db_type: timestamptz, go_type: time.Time}
+          - {db_type: timestamptz, nullable: true, go_type: {import: time, type: Time, pointer: true}}
+          - {db_type: jsonb, go_type: encoding/json.RawMessage}
