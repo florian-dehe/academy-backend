@@ -1,5 +1,5 @@
-// Package util holds HTTP helpers: typed errors, JSON IO, middleware.
-package util
+// Package httpx holds HTTP helpers: typed errors, JSON IO, middleware.
+package httpx
 
 import (
 	"encoding/json"

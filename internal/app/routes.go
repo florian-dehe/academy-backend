@@ -2,13 +2,13 @@ package app
 
 import (
 	"github.com/go-chi/chi/v5"
-	"github.com/remojii/academy-api/internal/util"
+	"github.com/remojii/academy-api/internal/httpx"
 )
 
 // routes registers every /v1 route (see endpoints.md). All handlers are
 // 501 stubs for now; the role guards are real.
 func routes(r chi.Router) {
-	ni := util.Handle(util.NotImplemented)
+	ni := httpx.Handle(httpx.NotImplemented)
 
 	// Account (§1)
 	r.Group(func(r chi.Router) {

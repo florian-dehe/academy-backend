@@ -29,7 +29,7 @@ func run() error {
 		return err
 	}
 
-	logger, err := cfg.JsonLogger()
+	logger, err := cfg.JSONLogger()
 	if err != nil {
 		return err
 	}

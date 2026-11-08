@@ -25,7 +25,7 @@ cmd/api
 api/              openapi.yaml, embedded; served at /openapi.yaml, Swagger UI at /docs
 internal/
   app/            router wiring + permission-matrix test
-  platform/       config, util (HTTP errors, middleware)
+  httpx/          HTTP errors, middleware, OpenAPI/Swagger handlers
   identity/       roles, auth middleware, TokenResolver, RequireChapter 402 hook (AllowAllChapters stub until P6)   <- real
   content/ learning/ gamification/ introtest/ platformadmin/
                   http.go = every route from endpoints.md with role guards, returning 501

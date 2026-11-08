@@ -1,4 +1,4 @@
-package util_test
+package httpx_test
 
 import (
 	"bytes"
@@ -10,11 +10,11 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/remojii/academy-api/internal/util"
+	"github.com/remojii/academy-api/internal/httpx"
 )
 
 func TestRecovererReturnsJSON(t *testing.T) {
-	h := util.Recoverer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { panic("boom") }))
+	h := httpx.Recoverer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { panic("boom") }))
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/", nil))
 	require.Equal(t, http.StatusInternalServerError, rec.Code)
@@ -25,8 +25,8 @@ func TestRecovererReturnsJSON(t *testing.T) {
 func TestRequestLoggerIncludesActor(t *testing.T) {
 	var buf bytes.Buffer
 	l := slog.New(slog.NewJSONHandler(&buf, nil))
-	h := util.RequestLogger(l)(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
-		util.SetActor(r.Context(), "u1", "admin")
+	h := httpx.RequestLogger(l)(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		httpx.SetActor(r.Context(), "u1", "admin")
 	}))
 	h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequestWithContext(t.Context(), http.MethodPut, "/v1/levels", nil))
 	require.Contains(t, buf.String(), `"user_id":"u1"`)
@@ -38,9 +38,9 @@ func TestDecodeLimitsAndTrailing(t *testing.T) {
 	req := func(body string) *http.Request {
 		return httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/", strings.NewReader(body))
 	}
-	require.NoError(t, util.Decode(req(`{"A":1}`), &v))
-	require.Error(t, util.Decode(req(`{"A":1} {"A":2}`), &v))
-	require.Error(t, util.Decode(req(`{"B":1}`), &v))
-	big := `{"A":1,"pad":"` + strings.Repeat("x", util.MaxBodyBytes) + `"}`
-	require.Error(t, util.Decode(req(big), &v))
+	require.NoError(t, httpx.Decode(req(`{"A":1}`), &v))
+	require.Error(t, httpx.Decode(req(`{"A":1} {"A":2}`), &v))
+	require.Error(t, httpx.Decode(req(`{"B":1}`), &v))
+	big := `{"A":1,"pad":"` + strings.Repeat("x", httpx.MaxBodyBytes) + `"}`
+	require.Error(t, httpx.Decode(req(big), &v))
 }

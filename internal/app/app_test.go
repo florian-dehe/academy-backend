@@ -30,7 +30,7 @@ func TestLoadDefaults(t *testing.T) {
 	require.False(t, c.IsDev())
 }
 
-func TestJsonLoggerRejectsBadLevel(t *testing.T) {
-	_, err := app.Config{LogLevel: "loud"}.JsonLogger()
+func TestJSONLoggerRejectsBadLevel(t *testing.T) {
+	_, err := app.Config{LogLevel: "loud"}.JSONLogger()
 	require.Error(t, err)
 }

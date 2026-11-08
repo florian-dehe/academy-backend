@@ -13,7 +13,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 
 	"github.com/remojii/academy-api/api"
-	"github.com/remojii/academy-api/internal/util"
+	"github.com/remojii/academy-api/internal/httpx"
 )
 
 type Deps struct {
@@ -32,15 +32,15 @@ type Config struct {
 
 func NewRouter(d Deps) http.Handler {
 	r := chi.NewRouter()
-	r.Use(middleware.RequestID, util.RequestLogger(d.Logger), util.Recoverer)
-	r.NotFound(util.NotFound)
-	r.MethodNotAllowed(util.MethodNotAllowed)
+	r.Use(middleware.RequestID, httpx.RequestLogger(d.Logger), httpx.Recoverer)
+	r.NotFound(httpx.NotFound)
+	r.MethodNotAllowed(httpx.MethodNotAllowed)
 
 	r.Get("/healthz", func(w http.ResponseWriter, _ *http.Request) {
-		util.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+		httpx.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})
-	r.Get("/openapi.yaml", util.SpecHandler(api.Spec))
-	r.Get("/docs", util.SwaggerUI)
+	r.Get("/openapi.yaml", httpx.SpecHandler(api.Spec))
+	r.Get("/docs", httpx.SwaggerUI)
 
 	r.Route("/v1", func(r chi.Router) {
 		routes(r)
@@ -63,8 +63,8 @@ func LoadConfig() (Config, error) {
 	return c, nil
 }
 
-// JsonLogger builds the JSON logger shared by the API and the worker.
-func (c Config) JsonLogger() (*slog.Logger, error) {
+// JSONLogger builds the JSON logger shared by the API and the worker.
+func (c Config) JSONLogger() (*slog.Logger, error) {
 	var level slog.Level
 	if err := level.UnmarshalText([]byte(c.LogLevel)); err != nil {
 		return nil, fmt.Errorf("config: LOG_LEVEL %q: %w", c.LogLevel, err)
