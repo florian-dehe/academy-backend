@@ -1,5 +1,6 @@
-// Package identity holds the Role type. Authentication lives in internal/app;
-// the users table is queried through identity/store (sqlc).
+// Package identity is the user module: roles, Laravel token auth middleware,
+// the users store (sqlc) and the POST /me handler. Routes are registered in
+// internal/app.
 package identity
 
 type Role string

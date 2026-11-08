@@ -7,19 +7,26 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/caarlos0/env/v11"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/render"
 
 	"github.com/remojii/academy-api/api"
 	"github.com/remojii/academy-api/internal/httpx"
+	"github.com/remojii/academy-api/internal/identity"
 )
 
 type Deps struct {
 	Logger *slog.Logger
 	// Ready reports dependency health for /readyz (e.g. DB ping). Optional.
 	Ready func(ctx context.Context) error
+	// LaravelUsers validates bearer tokens against the Laravel app.
+	LaravelUsers identity.UserClient
+	// Users stores Academy users.
+	Users identity.UserStore
 }
 
 type Config struct {
@@ -28,22 +35,31 @@ type Config struct {
 	HTTPAddr    string `env:"HTTP_ADDR" envDefault:":8080"`
 	DatabaseURL string `env:"DATABASE_URL,required"`
 	LogLevel    string `env:"LOG_LEVEL" envDefault:"info"`
+
+	// Laravel app that owns login and the Sanctum tokens. No default for the
+	// URL: forgetting it must fail startup, never disable auth.
+	LaravelBaseURL     string        `env:"LARAVEL_BASE_URL,required"`
+	LaravelUserPath    string        `env:"LARAVEL_USER_PATH" envDefault:"/api/v1/user"`
+	LaravelHTTPTimeout time.Duration `env:"LARAVEL_HTTP_TIMEOUT" envDefault:"5s"`
 }
 
 func NewRouter(d Deps) http.Handler {
 	r := chi.NewRouter()
-	r.Use(middleware.RequestID, httpx.RequestLogger(d.Logger), httpx.Recoverer)
+	// httpx.Recoverer and RequestLogger replace chi's: ours return the JSON
+	// error body and log the authenticated user.
+	r.Use(middleware.RequestID, httpx.RequestLogger(d.Logger), httpx.Recoverer, middleware.Timeout(25*time.Second))
 	r.NotFound(httpx.NotFound)
 	r.MethodNotAllowed(httpx.MethodNotAllowed)
 
-	r.Get("/healthz", func(w http.ResponseWriter, _ *http.Request) {
-		httpx.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	r.Get("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		render.JSON(w, r, map[string]string{"status": "ok"})
 	})
 	r.Get("/openapi.yaml", httpx.SpecHandler(api.Spec))
 	r.Get("/docs", httpx.SwaggerUI)
 
 	r.Route("/v1", func(r chi.Router) {
-		routes(r)
+		r.Use(middleware.AllowContentType("application/json"))
+		routes(r, d)
 	})
 	return r
 }

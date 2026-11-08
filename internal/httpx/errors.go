@@ -6,6 +6,8 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+
+	"github.com/go-chi/render"
 )
 
 // Error is a typed domain/HTTP error. Domain code returns these (or wraps them);
@@ -26,6 +28,9 @@ var (
 	ErrNotFound             = &Error{Status: http.StatusNotFound, Code: "not_found"}
 	ErrMethodNotAllowed     = &Error{Status: http.StatusMethodNotAllowed, Code: "method_not_allowed"}
 	ErrVersionNotDraft      = &Error{Status: http.StatusConflict, Code: "version_not_draft"}
+	ErrUserRequired         = &Error{Status: http.StatusForbidden, Code: "user_required", Message: "academy user required"}
+	ErrConflict             = &Error{Status: http.StatusConflict, Code: "conflict"}
+	ErrUnavailable          = &Error{Status: http.StatusServiceUnavailable, Code: "upstream_unavailable", Message: "authentication service unavailable"}
 	ErrNotImplemented       = &Error{Status: http.StatusNotImplemented, Code: "not_implemented"}
 )
 
@@ -40,21 +45,14 @@ type errorBody struct {
 	Error *Error `json:"error"`
 }
 
-func WriteJSON(w http.ResponseWriter, status int, v any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	if v != nil {
-		_ = json.NewEncoder(w).Encode(v)
-	}
-}
-
 func WriteError(w http.ResponseWriter, r *http.Request, err error) {
 	var he *Error
 	if !errors.As(err, &he) {
 		slog.ErrorContext(r.Context(), "unhandled error", "err", err, "path", r.URL.Path)
 		he = &Error{Status: http.StatusInternalServerError, Code: "internal", Message: "internal error"}
 	}
-	WriteJSON(w, he.Status, errorBody{Error: he})
+	render.Status(r, he.Status)
+	render.JSON(w, r, errorBody{Error: he})
 }
 
 // HandlerFunc is a handler that returns an error for central mapping.
@@ -95,6 +93,11 @@ func Recoverer(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+
+// render.Bind decodes through render.Decode, which by default accepts any
+// size and unknown fields. Route it through the strict Decode below, so
+// handlers can use chi's render.Bind idiom with our limits.
+func init() { render.Decode = Decode }
 
 // MaxBodyBytes caps JSON request bodies read by Decode.
 const MaxBodyBytes = 1 << 20

@@ -14,6 +14,7 @@ import (
 
 	"github.com/remojii/academy-api/internal/app"
 	db "github.com/remojii/academy-api/internal/db"
+	"github.com/remojii/academy-api/internal/identity"
 )
 
 func main() {
@@ -50,11 +51,19 @@ func run() error {
 		return err
 	}
 
+	laravel, err := identity.NewHTTPUserClient(cfg.LaravelBaseURL, cfg.LaravelUserPath, cfg.LaravelHTTPTimeout)
+	if err != nil {
+		return err
+	}
+
 	srv := &http.Server{
 		Addr: cfg.HTTPAddr,
 		Handler: app.NewRouter(app.Deps{
 			Logger: logger,
 			Ready:  func(ctx context.Context) error { return pool.Ping(ctx) },
+
+			LaravelUsers: laravel,
+			Users:        identity.NewPgUserStore(pool),
 		}),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       30 * time.Second,
