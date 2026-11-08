@@ -15,6 +15,7 @@ import (
 	"github.com/remojii/academy-api/internal/app"
 	db "github.com/remojii/academy-api/internal/db"
 	"github.com/remojii/academy-api/internal/identity"
+	"github.com/remojii/academy-api/internal/introtest"
 )
 
 func main() {
@@ -64,6 +65,7 @@ func run() error {
 
 			LaravelUsers: laravel,
 			Users:        identity.NewPgUserStore(pool),
+			Results:      introtest.NewPgResultStore(pool),
 		}),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       30 * time.Second,

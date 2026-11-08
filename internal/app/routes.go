@@ -5,6 +5,7 @@ import (
 
 	"github.com/remojii/academy-api/internal/httpx"
 	"github.com/remojii/academy-api/internal/identity"
+	"github.com/remojii/academy-api/internal/introtest"
 )
 
 // routes registers every /v1 route in one place; handlers and middleware live
@@ -27,6 +28,11 @@ func routes(r chi.Router, d Deps) {
 		r.Post("/me", identity.CreateUser(d.Users))
 		r.With(user).Get("/me", identity.GetMe())
 		r.With(user).Delete("/me", identity.DeleteMe(d.Users))
+
+		// Intro test (§2). The frontend asks and scores the questions; the API
+		// only stores the five axis scores and serves the latest.
+		r.With(user).Post("/intro-test/result", introtest.Submit(d.Results))
+		r.With(user).Get("/me/personality-result", introtest.GetLatest(d.Results))
 
 		// User administration (§7). Admin only.
 		r.With(user, admin).Get("/users", ni)

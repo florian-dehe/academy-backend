@@ -17,6 +17,7 @@ import (
 	"github.com/remojii/academy-api/api"
 	"github.com/remojii/academy-api/internal/httpx"
 	"github.com/remojii/academy-api/internal/identity"
+	"github.com/remojii/academy-api/internal/introtest"
 )
 
 type Deps struct {
@@ -27,6 +28,8 @@ type Deps struct {
 	LaravelUsers identity.UserClient
 	// Users stores Academy users.
 	Users identity.UserStore
+	// Results stores intro test (personality) results.
+	Results introtest.ResultStore
 }
 
 type Config struct {

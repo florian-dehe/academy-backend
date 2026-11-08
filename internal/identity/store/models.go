@@ -11,6 +11,17 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type PersonalityResult struct {
+	ID                uuid.UUID
+	UserID            uuid.UUID
+	Openness          float64
+	Conscientiousness float64
+	Extraversion      float64
+	Agreeableness     float64
+	Neuroticism       float64
+	CreatedAt         time.Time
+}
+
 type User struct {
 	ID             uuid.UUID
 	Email          string
