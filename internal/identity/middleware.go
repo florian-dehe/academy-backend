@@ -29,6 +29,12 @@ func UserFrom(ctx context.Context) (User, bool) {
 	return a, ok
 }
 
+// WithUser returns ctx carrying u, as RequireUser does. Other modules' tests
+// use it to skip the Laravel round trip.
+func WithUser(ctx context.Context, u User) context.Context {
+	return context.WithValue(ctx, userKey, u)
+}
+
 func bearerToken(r *http.Request) string {
 	scheme, token, ok := strings.Cut(r.Header.Get("Authorization"), " ")
 	if !ok || !strings.EqualFold(scheme, "Bearer") {

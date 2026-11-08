@@ -3,7 +3,8 @@ info:
   title: Remojii Academy API
   version: 0.1.0
   description: |
-    Academy backend (identity module only for now). /v1/me (POST, GET, DELETE) is real;
+    Academy backend (identity and intro test so far). /v1/me (POST, GET, DELETE),
+    /v1/intro-test/result and /v1/me/personality-result are real;
     /v1/users still answers 501 not_implemented; request/response schemas are
     added as handlers are built. Keep this file and internal/app/routes.go in sync.
     Required role is also exposed per operation as `x-min-role`
@@ -13,6 +14,7 @@ servers:
 tags:
   - {name: ops}
   - {name: identity}
+  - {name: introtest}
 components:
   securitySchemes:
     bearerAuth:
@@ -38,6 +40,24 @@ components:
         role: {type: string, enum: [learner, content_editor, admin]}
         email: {type: string}
         display_name: {type: string, nullable: true}
+    PersonalityScores:
+      type: object
+      required: [openness, conscientiousness, extraversion, agreeableness, neuroticism]
+      additionalProperties: false
+      properties:
+        openness: &score {type: number, format: double, minimum: 1, maximum: 5}
+        conscientiousness: *score
+        extraversion: *score
+        agreeableness: *score
+        neuroticism: *score
+    PersonalityResult:
+      allOf:
+        - {$ref: '#/components/schemas/PersonalityScores'}
+        - type: object
+          required: [id, created_at]
+          properties:
+            id: {type: string, format: uuid}
+            created_at: {type: string, format: date-time}
   responses:
     NotImplemented:
       description: Route not built yet.
@@ -118,6 +138,40 @@ paths:
         untouched; POST /v1/me creates a fresh Academy user afterwards.
       responses:
         '204': {description: Deleted.}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /v1/intro-test/result:
+    post:
+      operationId: postIntroTestResult
+      tags: [introtest]
+      x-min-role: learner
+      security: [{bearerAuth: []}]
+      description: |
+        Store the caller's intro test result. The frontend asks the 30 questions
+        and computes the five axis scores (1.0..5.0); answers are not sent or
+        stored. A retake adds a new result, and the newest one is current.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/PersonalityScores'}
+      responses:
+        '201': {description: Stored., content: {application/json: {schema: {$ref: '#/components/schemas/PersonalityResult'}}}}
+        '400': {description: A score is missing, not a number or outside 1.0..5.0, or the body has unknown fields.}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /v1/me/personality-result:
+    get:
+      operationId: getMePersonalityResult
+      tags: [introtest]
+      x-min-role: learner
+      security: [{bearerAuth: []}]
+      description: The caller's latest intro test result.
+      responses:
+        '200': {description: The latest result., content: {application/json: {schema: {$ref: '#/components/schemas/PersonalityResult'}}}}
+        '404': {description: The caller has not submitted a result yet.}
         '401': {$ref: '#/components/responses/Unauthorized'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '503': {$ref: '#/components/responses/Unavailable'}
