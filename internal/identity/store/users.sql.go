@@ -12,6 +12,15 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const deleteUser = `-- name: DeleteUser :exec
+DELETE FROM users WHERE id = $1
+`
+
+func (q *Queries) DeleteUser(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteUser, id)
+	return err
+}
+
 const getUserByEmail = `-- name: GetUserByEmail :one
 SELECT id, email, job_board_user_id, display_name, role, created_at, updated_at FROM users WHERE email = $1
 `
@@ -69,22 +78,22 @@ func (q *Queries) GetUserByJobBoardID(ctx context.Context, jobBoardUserID pgtype
 	return i, err
 }
 
-const upsertUserByJobBoardID = `-- name: UpsertUserByJobBoardID :one
+const insertUserIfAbsent = `-- name: InsertUserIfAbsent :one
 INSERT INTO users (email, job_board_user_id, display_name)
 VALUES ($1, $2, $3)
-ON CONFLICT (job_board_user_id) DO UPDATE
-   SET email = EXCLUDED.email, display_name = EXCLUDED.display_name, updated_at = now()
+ON CONFLICT (job_board_user_id) DO NOTHING
 RETURNING id, email, job_board_user_id, display_name, role, created_at, updated_at
 `
 
-type UpsertUserByJobBoardIDParams struct {
+type InsertUserIfAbsentParams struct {
 	Email          string
 	JobBoardUserID pgtype.Text
 	DisplayName    pgtype.Text
 }
 
-func (q *Queries) UpsertUserByJobBoardID(ctx context.Context, arg UpsertUserByJobBoardIDParams) (User, error) {
-	row := q.db.QueryRow(ctx, upsertUserByJobBoardID, arg.Email, arg.JobBoardUserID, arg.DisplayName)
+// Returns no row when job_board_user_id already exists (the caller then reads it).
+func (q *Queries) InsertUserIfAbsent(ctx context.Context, arg InsertUserIfAbsentParams) (User, error) {
+	row := q.db.QueryRow(ctx, insertUserIfAbsent, arg.Email, arg.JobBoardUserID, arg.DisplayName)
 	var i User
 	err := row.Scan(
 		&i.ID,

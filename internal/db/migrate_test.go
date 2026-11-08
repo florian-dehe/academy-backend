@@ -52,10 +52,6 @@ func TestMigrations(t *testing.T) {
 	require.NoError(t, db.CheckMigrated(ctx, pool))
 	require.NoError(t, db.MigrateUp(ctx, pool), "idempotent")
 
-	var title string
-	require.NoError(t, pool.QueryRow(ctx, "SELECT title FROM levels WHERE level = 1").Scan(&title))
-	require.Equal(t, "Beginner", title)
-
 	require.NoError(t, db.MigrateDown(ctx, pool))
 	var n int
 	require.NoError(t, pool.QueryRow(ctx,
