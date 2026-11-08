@@ -3,38 +3,34 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
-	"time"
+	"os"
 
+	"github.com/caarlos0/env/v11"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
 	"github.com/remojii/academy-api/api"
-	"github.com/remojii/academy-api/internal/billing"
-	"github.com/remojii/academy-api/internal/content"
-	"github.com/remojii/academy-api/internal/entitlement"
-	"github.com/remojii/academy-api/internal/gamification"
-	"github.com/remojii/academy-api/internal/identity"
-	"github.com/remojii/academy-api/internal/introtest"
-	"github.com/remojii/academy-api/internal/learning"
-	"github.com/remojii/academy-api/internal/platform/httpx"
-	"github.com/remojii/academy-api/internal/platformadmin"
+	"github.com/remojii/academy-api/internal/httpx"
 )
 
 type Deps struct {
-	Logger   *slog.Logger
-	Resolver identity.TokenResolver
-	// Entitlement guards chapters >= 2. Defaults to entitlement.AllowAll until P6.
-	Entitlement entitlement.Service
+	Logger *slog.Logger
 	// Ready reports dependency health for /readyz (e.g. DB ping). Optional.
 	Ready func(ctx context.Context) error
 }
 
+type Config struct {
+	// Env has no default on purpose: forgetting it must not enable dev auth.
+	Env         string `env:"APP_ENV,required"` // dev | staging | prod
+	HTTPAddr    string `env:"HTTP_ADDR" envDefault:":8080"`
+	DatabaseURL string `env:"DATABASE_URL,required"`
+	LogLevel    string `env:"LOG_LEVEL" envDefault:"info"`
+}
+
 func NewRouter(d Deps) http.Handler {
-	if d.Entitlement == nil {
-		d.Entitlement = entitlement.AllowAll{}
-	}
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID, httpx.RequestLogger(d.Logger), httpx.Recoverer)
 	r.NotFound(httpx.NotFound)
@@ -43,30 +39,35 @@ func NewRouter(d Deps) http.Handler {
 	r.Get("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		httpx.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})
-	r.Get("/readyz", func(w http.ResponseWriter, req *http.Request) {
-		if d.Ready != nil {
-			ctx, cancel := context.WithTimeout(req.Context(), 2*time.Second)
-			defer cancel()
-			if err := d.Ready(ctx); err != nil {
-				httpx.WriteJSON(w, http.StatusServiceUnavailable, map[string]string{"status": "unavailable"})
-				return
-			}
-		}
-		httpx.WriteJSON(w, http.StatusOK, map[string]string{"status": "ready"})
-	})
-
 	r.Get("/openapi.yaml", httpx.SpecHandler(api.Spec))
 	r.Get("/docs", httpx.SwaggerUI)
 
 	r.Route("/v1", func(r chi.Router) {
-		r.Use(identity.Authenticate(d.Resolver))
-		identity.Mount(r)
-		introtest.Mount(r)
-		learning.Mount(r, d.Entitlement)
-		gamification.Mount(r)
-		billing.Mount(r)
-		content.Mount(r)
-		platformadmin.Mount(r)
+		routes(r)
 	})
 	return r
+}
+
+func (c Config) IsDev() bool { return c.Env == "dev" }
+
+func LoadConfig() (Config, error) {
+	c, err := env.ParseAs[Config]()
+	if err != nil {
+		return c, err
+	}
+	switch c.Env {
+	case "dev", "staging", "prod":
+	default:
+		return c, fmt.Errorf("config: APP_ENV must be dev, staging or prod, got %q", c.Env)
+	}
+	return c, nil
+}
+
+// JSONLogger builds the JSON logger shared by the API and the worker.
+func (c Config) JSONLogger() (*slog.Logger, error) {
+	var level slog.Level
+	if err := level.UnmarshalText([]byte(c.LogLevel)); err != nil {
+		return nil, fmt.Errorf("config: LOG_LEVEL %q: %w", c.LogLevel, err)
+	}
+	return slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: level})), nil
 }

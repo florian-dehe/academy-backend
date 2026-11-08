@@ -1,7 +1,7 @@
 name: ci
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
   pull_request:
 jobs:
   ci:
@@ -24,9 +24,19 @@ jobs:
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
+      - name: sqlc generated code is up to date
+        run: |
+          go run github.com/sqlc-dev/sqlc/cmd/sqlc@v1.30.0 generate
+          test -z "$(git status --porcelain -- 'internal/*/store')" || { git status --short -- 'internal/*/store'; echo 'run make sqlc and commit'; exit 1; }
       - run: go vet ./...
-      - uses: golangci/golangci-lint-action@v9
+      - run: go test ./... -race -count=1
+  static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
-          version: latest
+          go-version-file: go.mod
+      - uses: golangci/golangci-lint-action@v8
       - run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
       - run: go test ./... -race -count=1
